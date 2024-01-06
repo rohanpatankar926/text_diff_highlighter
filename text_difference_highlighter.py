@@ -4,30 +4,60 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.metrics import edit_distance
 from nltk.translate.bleu_score import sentence_bleu
 
-def compare_texts(actual_text, predicted_text):
+# def compare_texts(actual_text, predicted_text):
+#     matcher = SequenceMatcher(None, actual_text.split(), predicted_text.split())
+#     differences = matcher.get_opcodes()
+
+#     actual_value_equal = []
+#     predicted_value_equal = []
+#     actual_value_delete=[]
+#     predicted_value_delete=[]
+#     actual_value_replace=[]
+#     predicted_value_replace=[]
+#     for tag, i1, i2, j1, j2 in differences:
+#         if tag == 'equal':
+#             actual_value_equal.extend(actual_text.split()[i1:i2])
+#             predicted_value_equal.extend(predicted_text.split()[j1:j2])
+#         if tag=="delete":
+#             actual_value_delete.extend(actual_text.split()[i1:i2])
+#             predicted_value_delete.extend(predicted_text.split()[j1:j2])
+#         if tag=="replace":
+#             actual_value_replace.extend(actual_text.split()[i1:i2])
+#             predicted_value_replace.extend(predicted_text.split()[j1:j2])
+
+#     return {"replace":{"actual_value":actual_value_replace,"predicted_value":predicted_value_replace},"equal":{"actual_value":actual_value_equal,"predicted_value":predicted_value_equal},"delete":{"actual_value":actual_value_delete,"predicted_value":predicted_value_delete}}
+def compare_texts(actual_text,predicted_text):
     matcher = SequenceMatcher(None, actual_text.split(), predicted_text.split())
     differences = matcher.get_opcodes()
-
-    actual_value = []
-    predicted_value = []
+    actual_value_equal = []
+    predicted_value_equal = []
+    actual_value_delete=[]
+    predicted_value_delete=[]
+    actual_value_replace=[]
+    predicted_value_replace=[]
     for tag, i1, i2, j1, j2 in differences:
-        if tag == 'replace':
-            actual_value.extend(actual_text.split()[i1:i2])
-            predicted_value.extend(predicted_text.split()[j1:j2])
+        if tag == 'equal':
+            actual_value_equal.extend(actual_text.split()[i1:i2])
+            predicted_value_equal.extend(predicted_text.split()[j1:j2])
+        if tag=="delete":
+            actual_value_delete.extend(actual_text.split()[i1:i2])
+            predicted_value_delete.extend(predicted_text.split()[j1:j2])
+        if tag=="replace":
+            actual_value_replace.extend(actual_text.split()[i1:i2])
+            predicted_value_replace.extend(predicted_text.split()[j1:j2])
+    return actual_value_equal,predicted_value_equal
 
-    return actual_value, predicted_value
-
-def highlight_differences(actual_text, predicted_text, actual_value, predicted_value):
-    highlighted_text = []
-
-    for a, p in zip(actual_text.split(), predicted_text.split()):
-        if a.lower() != p.lower():
-            highlighted_text.append(f'<span style="color:red">{p}</span>')
-        else:
-            highlighted_text.append(p)
-
-    highlighted_predicted = ' '.join(highlighted_text)
-    return actual_value, predicted_value, highlighted_predicted
+def highlight_differences(predicted_text, actual_value, predicted_value):
+    outs=""
+    for idx,val in enumerate(predicted_text.split()):
+        try:
+            if val in actual_value and val == actual_value[idx] and  val == predicted_value[idx]:
+                outs+=" "+val
+            else:
+                outs+=' <span style="color:red">'+val+'</span>'
+        except IndexError:
+            outs=outs
+    return actual_value, predicted_value, outs
 
 def calculate_cosine_similarity(actual_text, predicted_text):
     vectorizer = TfidfVectorizer()
@@ -52,9 +82,8 @@ actual_text = st.text_area('Enter Actual Text:')
 predicted_text = st.text_area('Enter Predicted Text:')
 
 if st.button('Compare Texts'):
-    actual, predicted = compare_texts(actual_text, predicted_text)
-    actual, predicted, highlighted_output = highlight_differences(actual_text, predicted_text, actual, predicted)
-    
+    actual,predicted = compare_texts(actual_text, predicted_text)
+    actual, predicted, highlighted_output = highlight_differences(predicted_text, actual, predicted)
     st.markdown(f'<span style="color:blue">**Actual Value:**</span> {actual_text}', unsafe_allow_html=True)
     st.markdown(f'<span style="color:blue">**Predicted Value:**</span> {highlighted_output}', unsafe_allow_html=True)
     st.write(f'<span style="color:blue">**Actual List:**</span> {actual}', unsafe_allow_html=True)
